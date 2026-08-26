@@ -127,6 +127,7 @@
   var grid = document.getElementById("majors-grid");
   if (search && grid) {
     var cards = Array.prototype.slice.call(grid.querySelectorAll(".major-card"));
+    var divisions = Array.prototype.slice.call(grid.querySelectorAll(".major-division"));
     var hint = document.getElementById("search-hint");
     search.addEventListener("input", function () {
       var q = search.value.trim().toLowerCase();
@@ -135,6 +136,14 @@
         var match = c.textContent.toLowerCase().indexOf(q) !== -1;
         c.style.display = match ? "" : "none";
         if (match) shown++;
+      });
+      /* The list is grouped under division headings, so a heading with every
+         card filtered out would otherwise sit there looking like a dead section. */
+      divisions.forEach(function (d) {
+        var any = Array.prototype.some.call(d.querySelectorAll(".major-card"), function (c) {
+          return c.style.display !== "none";
+        });
+        d.style.display = any ? "" : "none";
       });
       if (hint) {
         hint.textContent = q
@@ -147,6 +156,15 @@
       var visible = cards.filter(function (c) { return c.style.display !== "none"; });
       if (visible.length === 1) window.location.href = visible[0].getAttribute("href");
     });
+
+    /* Honour ?q= so a shared filtered-majors URL opens in the expected state. */
+    try {
+      var q0 = new URLSearchParams(window.location.search).get("q");
+      if (q0) {
+        search.value = q0;
+        search.dispatchEvent(new Event("input"));
+      }
+    } catch (err) { /* older browser: the list just renders unfiltered */ }
   }
 
   /* ---- Major page: difficulty filter ---- */
