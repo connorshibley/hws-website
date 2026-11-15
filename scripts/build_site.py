@@ -107,7 +107,7 @@ TEAM = [
     ("CS", "Connor Shibley", "President", "Passionate about making AI accessible to everyone", "team-avatar-1"),
     ("AK", "Amanda Kronowitz", "Vice President", "Exploring AI tools for research and projects", "team-avatar-2"),
     ("JD", "Josh Doolan", "AI Strategist", "Orchestrating the future of human-AI collaboration", "team-avatar-3"),
-    ("JP", "Josh Powell", "Club Officer", "Helping more students at HWS get started with AI", "team-avatar-1"),
+    ("JP", "Jake Powell", "Club Officer", "Helping more students at HWS get started with AI", "team-avatar-1"),
 ]
 
 # Organisations that appear in founders' link rows. Kept out of schema.org sameAs,
