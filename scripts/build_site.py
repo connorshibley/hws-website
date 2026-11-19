@@ -593,7 +593,7 @@ def esc(s):
 # ---------------------------------------------------------------------------
 # Shared chrome
 # ---------------------------------------------------------------------------
-def head(title, description, canonical_path, jsonld):
+def head(title, description, canonical_path, jsonld, home=False):
     canonical = BASE_URL + canonical_path
     blocks = "\n".join(
         '<script type="application/ld+json">' + json.dumps(obj, ensure_ascii=False) + "</script>"
@@ -627,28 +627,42 @@ def head(title, description, canonical_path, jsonld):
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#0e0a1a">
+<script>document.documentElement.classList.add("js")</script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/styles.css">
 {blocks}
 </head>"""
 
 
-def site_header():
+def site_header(home=False):
     return f"""<a class="skip-link" href="#main">Skip to content</a>
-<header class="site-header">
+<header class="site-header bar{"" if home else " bar--solid"}">
   <div class="site-header-inner">
     <a class="wordmark" href="/">
       <span class="logo-tile" aria-hidden="true">{BRAIN_SVG}</span>
       <span class="wordmark-name">AI @ HWS</span>
     </a>
     <nav class="site-nav" aria-label="Primary">
-      <a href="/#about">About</a>
-      <a href="/majors/">By Major</a>
-      <a href="/tasks/">By Task</a>
-      <a href="/resources/ai-at-hws/">Resources</a>
-      <a href="/faq/">FAQ</a>
-      <a href="/#founders">Meet The Founders</a>
-      <a class="nav-cta" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join Us</a>
+      <div class="bar__links">
+        <a href="/#about">About</a>
+        <a href="/majors/">By Major</a>
+        <a href="/tasks/">By Task</a>
+        <a href="/resources/ai-at-hws/">Resources</a>
+        <a href="/faq/">FAQ</a>
+        <a href="/#founders">Meet The Founders</a>
+      </div>
+      <a class="nav-cta" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the club</a>
+      <details class="bar__menu"><summary>Menu</summary>
+        <div class="bar__sheet">
+          <a href="/#about">About</a>
+          <a href="/majors/">By Major</a>
+          <a href="/tasks/">By Task</a>
+          <a href="/resources/ai-at-hws/">Resources</a>
+          <a href="/faq/">FAQ</a>
+          <a href="/#founders">Meet The Founders</a>
+        </div>
+      </details>
     </nav>
   </div>
 </header>"""
@@ -687,7 +701,7 @@ def site_footer():
 </footer>"""
 
 
-def scripts():
+def scripts(home=False):
     return '<script src="/js/site.js" defer></script>'
 
 
@@ -858,7 +872,7 @@ def build_home():
                "publisher": {"@id": ORG_ID}}
 
     body = f"""<body class="view-home">
-{site_header()}
+{site_header(home=True)}
 <main id="main">
   <section class="lp-hero">
     <div class="hero-blob hero-blob-1" aria-hidden="true"></div>
@@ -869,7 +883,7 @@ def build_home():
       <h1 class="hero-title">AI for Everyone at Hobart and William Smith</h1>
       <p class="hero-sub">The student-run AI club at {COLLEGE} (HWS). Learn practical AI skills to excel as a student and future professional &mdash; no coding required.</p>
       <div class="hero-actions">
-        <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the Club <span aria-hidden="true">&#8599;</span></a>
+        <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the club <span aria-hidden="true">&#8599;</span></a>
         <a class="btn-secondary" href="/majors/" data-cta="hero-browse">Browse Use Cases</a>
       </div>
       <p class="hero-meeting">{MEETING}</p>
@@ -902,7 +916,7 @@ def build_home():
           <li><span class="check-dot" aria-hidden="true">&#10003;</span>Guest speakers from the tech industry</li>
           <li><span class="check-dot" aria-hidden="true">&#10003;</span>Build a portfolio of AI-enhanced projects</li>
         </ul>
-        <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Get Started Today <span aria-hidden="true">&#8599;</span></a>
+        <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the club <span aria-hidden="true">&#8599;</span></a>
       </div>
       <div class="tile-stack">
         <div class="photo-tile">Workshop Session</div>
@@ -953,7 +967,7 @@ def build_home():
       <h2 class="section-title">Ready to Join?</h2>
       <p class="join-sub">No experience, no application &mdash; just show up. Open to all majors and class years at {COLLEGE}.</p>
       <p class="join-meeting">{MEETING}</p>
-      <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the Skool community <span aria-hidden="true">&#8599;</span></a>
+      <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the club <span aria-hidden="true">&#8599;</span></a>
       <a class="btn-secondary" href="/majors/" data-cta="join-section-majors">Start with your major&rsquo;s use cases &rarr;</a>
     </div>
   </section>
@@ -972,7 +986,7 @@ def build_home():
         <article class="card"><span class="icon-tile" aria-hidden="true">{ICONS['rocket']}</span><h3>Calendar &amp; club activities</h3><p>Meetings, guest speakers, and events &mdash; so you always know what&rsquo;s coming up and never miss a session.</p></article>
       </div>
       <div class="skool-cta">
-        <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the Skool community <span aria-hidden="true">&#8599;</span></a>
+        <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the club <span aria-hidden="true">&#8599;</span></a>
         <p class="skool-meta">Free to join &middot; {SKOOL_MEMBERS} members &middot; Open to every HWS student</p>
       </div>
     </div>
@@ -1002,10 +1016,10 @@ def build_home():
   </section>
 </main>
 {site_footer()}
-{scripts()}
+{scripts(home=True)}
 </body>
 </html>"""
-    (SITE / "index.html").write_text(head(title, desc, "/", [ORG_JSONLD, website, EVENT_JSONLD]) + "\n" + body + "\n", encoding="utf-8")
+    (SITE / "index.html").write_text(head(title, desc, "/", [ORG_JSONLD, website, EVENT_JSONLD], home=True) + "\n" + body + "\n", encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -1385,7 +1399,7 @@ def build_ai_resources_page():
     <p class="siblings"><a href="/majors/">Browse 840 AI use cases by major</a> &middot;
     <a href="/tasks/">Browse them by task</a> &middot;
     <a href="/ai-policy/">Read the coursework guide</a></p>
-    <p class="siblings-all"><a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the Skool community <span aria-hidden="true">&#8599;</span></a></p>
+    <p class="siblings-all"><a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the club <span aria-hidden="true">&#8599;</span></a></p>
   </section>
   <section class="sibling-majors">
     <h2>How to use this page</h2>
