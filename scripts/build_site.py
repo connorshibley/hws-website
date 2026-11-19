@@ -1872,6 +1872,16 @@ def build_videos_js():
     (SITE / "js" / "videos.js").write_text(js, encoding="utf-8")
 
 
+def build_grid_data():
+    """Write a slim per-major list of [title, difficulty] pairs for the home page grid."""
+    grid = [
+        {"n": m["name"], "s": m["slug"], "u": [[u["title"], u["difficulty"]] for u in m["useCases"]]}
+        for m in DATA["majors"]
+    ]
+    payload = json.dumps(grid, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    (SITE / "js" / "grid-data.js").write_text("window.HWS_GRID = " + payload + ";\n", encoding="utf-8")
+
+
 def build_og_image():
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
@@ -2065,6 +2075,7 @@ def main():
     n = build_sitemap()
     build_headers()
     build_videos_js()
+    build_grid_data()
     og = build_og_image()
     ico = build_favicons()
     build_manifest()
@@ -2094,7 +2105,7 @@ def main():
     print(f"  homepage + majors index + {len(majors)} major pages + {len(FOUNDERS)} founder pages")
     print(f"  tasks index + {len(TASK_HUBS)} task hubs + AI resources + faq + ai-policy")
     print(f"  sitemap: {n} urls | robots.txt (+ AI bot allow rules), llms.txt, _headers written")
-    print(f"  js/videos.js regenerated from config | og-image: {og} | favicons: {ico} | manifest written")
+    print(f"  js/videos.js regenerated from config | js/grid-data.js regenerated | og-image: {og} | favicons: {ico} | manifest written")
 
 
 if __name__ == "__main__":

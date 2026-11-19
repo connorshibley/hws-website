@@ -59,6 +59,17 @@ class RedesignTests(unittest.TestCase):
             text = self.page(f"majors/{m['slug']}/index.html")
             self.assertEqual(1, text.count(f'<div class="grid-strip" style="--col:{i}" aria-hidden="true"></div>'), m["slug"])
 
+    def test_grid_data_is_slim_and_matches_the_library(self):
+        raw = (ROOT / "site" / "js" / "grid-data.js").read_text(encoding="utf-8")
+        self.assertTrue(raw.startswith("window.HWS_GRID = ") and raw.endswith(";\n"))
+        grid = json.loads(raw[len("window.HWS_GRID = "):-2].replace("<\\/", "</"))
+        majors = json.loads((ROOT / "site" / "data.json").read_text(encoding="utf-8"))["majors"]
+        self.assertEqual([m["slug"] for m in majors], [g["s"] for g in grid])
+        for m, g in zip(majors, grid):
+            self.assertEqual(m["name"], g["n"])
+            self.assertEqual([[u["title"], u["difficulty"]] for u in m["useCases"]], g["u"])
+        self.assertLess(len(raw.encode("utf-8")), 70_000)
+
 
 if __name__ == "__main__":
     unittest.main()
