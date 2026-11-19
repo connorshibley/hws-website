@@ -18,3 +18,6 @@ AI_Use_Cases_preview.html
 # Python
 __pycache__/
 *.pyc
+
+# Local brainstorming mockups
+.superpowers/
