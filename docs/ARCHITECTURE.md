@@ -27,16 +27,16 @@ it always regenerates everything.
 
 | Function | Emits |
 | --- | --- |
-| `build_home()` | `site/index.html` — hero, team (`TEAM` constant), founders (`FOUNDERS` constant), FAQ, Organization/Event/WebSite JSON-LD |
+| `build_home()` | `site/index.html` — the scroll journey: hero, quiet lines, library and major picker, team (`TEAM` constant), founders (`FOUNDERS` constant), FAQ, close; Organization/Event/WebSite JSON-LD. The only page that loads the engine |
 | `build_majors_index()` | `site/majors/index.html` — searchable grid of all 42 majors |
-| `build_major(m, prev_m, next_m)` | `site/majors/<slug>/index.html` — one page per major, prev/next links, use-case cards |
+| `build_major(m, prev_m, next_m)` | `site/majors/<slug>/index.html` — one page per major, prev/next links, use-case cards, and a `.grid-strip` (`--col:<index>`) echoing the home grid |
 | `build_tasks_index()` / `build_task_hub()` | `site/tasks/index.html` and `site/tasks/<slug>/index.html` — task-first routes to the same major-specific use cases |
 | `build_ai_resources_page()` / `build_faq_page()` / `build_ai_policy_page()` | `site/resources/ai-at-hws/`, `site/faq/`, and `site/ai-policy/` — cited HWS resources, visible Q&A, and coursework guidance |
 | `build_founder(f, others)` | `site/founders/<slug>/index.html` — one page per entry in `FOUNDERS`, `Person` JSON-LD |
 
 Shared page furniture — `head()` (meta/OG/canonical/JSON-LD injection, plus the GA4 tag —
 see [ANALYTICS.md](ANALYTICS.md)), `site_header()`,
-`site_footer()`, `scripts()`, `breadcrumb(items)` — is composed into each page rather than
+`site_footer()`, `scripts(home=False)` (home gets engine, grid-data, home, site, all `defer`; every other page only `site.js`), `breadcrumb(items)` — is composed into each page rather than
 templated from a shared file; there is no template engine, just Python f-strings building
 HTML strings directly. `esc()` (`html.escape`) is used at every point user-sourced or
 spreadsheet-sourced text is interpolated — preserve that when adding new interpolations.
@@ -86,7 +86,9 @@ Each is its own `build_*` function, all called from `main()`:
   not consume this file; use page-level directives or approved Vercel configuration there.
 - `build_videos_js()` — `site/js/videos.js`, a runtime-readable projection of
   `videos-config.json` for any client-side use.
-- `build_og_image()` / `build_favicons()` — raster assets; see
+- `build_grid_data()` — `site/js/grid-data.js`, `window.HWS_GRID`: per major, its name, slug
+  and `[title, difficulty]` pairs. Feeds the home page's 840-dot grid and major picker.
+- `build_og_image()` / `build_favicons()` — raster assets; the Pillow drawers (`_og_png_pillow()`, `_icon_pillow()`) draw the brain glyph from the path data in `site/assets/favicon.svg`, read at build time. See
   [DEPLOYMENT.md](DEPLOYMENT.md#raster-asset-fallback-chain) for the tool fallback chain.
 - `build_manifest()` — `site.webmanifest`.
 
@@ -99,9 +101,17 @@ param. Types in use: `EducationalOrganization` + a current `Event` + `WebSite` (
 does not emit FAQPage, SearchAction, ItemList, or VideoObject markup. Keep that minimal
 policy unless a real supported consumer and maintained facts justify an addition.
 
-## Client-side JS (`site/js/site.js`)
+## Client-side JS (`site/js/site.js`, `site/js/home.js`, `site/engine/*`)
 
-Hand-written, not regenerated. Four independent, defensively-scoped behaviors, each a no-op
+`home.js` is home page only. It mounts the scroll engine, fixes anchor landing (so a link such
+as `/#library` lands with its heading below the bar), reveals content on keyboard focus inside
+pinned acts, draws the 840-dot grid and major picker from `grid-data.js`, and re-measures the
+engine when the use-case list opens or closes. It sets `html.grid-on` only when the data and a
+canvas are both available; with either missing, the plain text stays. `site/engine/` is the
+vendored Scrollcraft engine (MIT, copied unedited from the AR0UND project; do not edit). The
+no-JS guarantee also lives in `styles.css` (`html:not(.sc-ready)` override).
+
+`site.js` is hand-written, not regenerated. Four independent, defensively-scoped behaviors, each a no-op
 if its expected DOM isn't present: hash-router backward-compat (old `#/major/<slug>` links
 redirect to `/majors/<slug>/`), the majors-index live search filter, the per-major
 difficulty filter, and the starter-prompt copy button (three-tier fallback: async clipboard

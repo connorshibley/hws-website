@@ -27,9 +27,17 @@ unchanged repo must produce **no diff**; that's the correctness check to run aft
 python3 scripts/build_site.py
 ```
 
-Run the focused migration/schema regression checks:
+Run the regression checks (SEO migration/schema in `tests/test_seo_migration.py`, redesign
+in `tests/test_redesign.py`):
 ```bash
-python -m unittest tests.test_seo_migration
+python3 -m unittest discover tests
+```
+
+Compare the built site with the pre-redesign commit. Exit 0 when the sitemap URL set matches
+and every page except the home page has identical visible `<main>` text (join-button text is
+normalised); it always prints the home page diff:
+```bash
+python3 scripts/check_redesign.py [--ref REF]   # default ref 41491b4
 ```
 
 Re-import from the source spreadsheet — only needed when `AI_Use_Cases_by_Major_HWS.xlsx`
@@ -41,8 +49,9 @@ python3 scripts/extract_data.py
 Deploy through the configured Vercel project after reviewing the generated `site/` diff.
 Deploy the legacy Netlify configuration only when maintaining the old-host redirect.
 
-There is no linter or npm/node toolchain in this repo. `tests/test_seo_migration.py` is a
-standard-library regression suite for the custom-domain migration and minimal-schema policy.
+There is no linter or npm/node toolchain in this repo. The two files in `tests/` are
+standard-library regression suites: `test_seo_migration.py` for the custom-domain migration
+and minimal-schema policy, `test_redesign.py` for the redesign's invariants.
 The generator also enforces correctness with `assert` statements inside `extract_data.py` (spreadsheet
 shape: 42 majors × 20 use cases = 840, difficulty/level agreement, no stray rows) and
 `build_site.py` (every expected output file exists after the build). A failed assertion is
@@ -50,7 +59,10 @@ the signal something is wrong; there's nothing else to run in its place.
 
 `build_og_image()` / `build_favicons()` prefer `Pillow`, falling back to `cairosvg` /
 `rsvg-convert` / `imagemagick` on `PATH`. If none are installed the build still completes —
-it just skips those raster outputs and says so in its printed summary. See
+it just skips those raster outputs and says so in its printed summary. The Pillow path draws
+the brain glyph by reading its path data from `site/assets/favicon.svg` at build time, and the
+PNGs regenerate only when Pillow is available, so run the build with a Python that has Pillow
+installed (a private venv is fine) when brand images change. See
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full fallback chain.
 
 ## Architecture
@@ -67,17 +79,30 @@ site/data.json + site/js/data.js         canonical use-case data (generated)
         │
         │  scripts/build_site.py  ← also reads site/data/videos-config.json (hand-maintained)
         ▼
-site/index.html · site/majors/** · site/founders/** · site/js/videos.js ·
+site/index.html · site/majors/** · site/founders/** · site/js/videos.js · site/js/grid-data.js ·
 sitemap.xml · robots.txt · llms.txt · _headers · og-image.* · favicons · site.webmanifest
 ```
 
 **Generated vs. hand-written is the fault line to respect.** Editing a generated file is
 invisible work — the next `build_site.py` run silently overwrites it. Hand-written inputs:
-`scripts/build_site.py`, `scripts/extract_data.py`, `site/css/styles.css`,
-`site/js/site.js`, `site/data/videos-config.json`, and the constants block at the top of
-`build_site.py` (`TEAM`, `FOUNDERS`, `SKOOL_MEMBERS`, meeting time, `BASE_URL`). Everything
-under `site/majors/`, `site/founders/`, `site/index.html`, and `site/js/videos.js` is
-generated — change the source and rebuild instead of touching the output.
+`scripts/build_site.py`, `scripts/extract_data.py`, `scripts/check_redesign.py`,
+`site/css/styles.css`, `site/js/site.js`, `site/js/home.js` (home page only: mounts the scroll
+engine, fixes anchor landing, keyboard reveal in pinned acts, the 840-dot grid and major
+picker, re-measures the engine when the use-case list opens or closes),
+`site/data/videos-config.json`, and the constants block at the top of
+`build_site.py` (`TEAM`, `FOUNDERS`, `SKOOL_MEMBERS`, meeting time, `BASE_URL`). The vendored
+engine `site/engine/scrollcraft.js`, `scrollcraft.css` and `LICENSE-scrollcraft.txt` is
+Scrollcraft (MIT), copied unedited from the AR0UND project: do not edit it. Everything
+under `site/majors/`, `site/founders/`, `site/index.html`, `site/js/videos.js`, and
+`site/js/grid-data.js` (written by `build_grid_data()`) is generated — change the source and
+rebuild instead of touching the output.
+
+**Design system.** One dark ground, Fraunces headlines, Inter text, one accent used only on
+buttons, links and the lit column; tokens at the top of `styles.css`. Only the home page loads
+the engine, `grid-data.js` and `home.js` (script order: engine, grid-data, home, site; all
+`defer`). Each major page carries a `.grid-strip` with `--col:<index>`. The no-JS guarantee
+lives in `styles.css` (the `html:not(.sc-ready)` override) and in `home.js` gating
+(`html.grid-on` only when the data and a canvas are both available).
 
 **Video/prompt resolution is the one piece that spans multiple files and won't make sense
 from any single one of them.** For a given use case, `build_site.py` decides which YouTube

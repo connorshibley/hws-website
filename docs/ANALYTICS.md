@@ -38,9 +38,9 @@ individually — did their page get looked at, clicked into, and actually engage
 | --- | --- | --- | --- |
 | `prompt_copied` | Clicking "Copy" on any use case's starter prompt | `major`, `use_case_number`, `difficulty` | **Conversion** — this is the site's core "aha" moment |
 | `tutorial_video_click` | Clicking a use case's "Watch" link | `major`, `use_case_number`, `difficulty`, `video_title`, `link_url` | Engagement |
-| `join_cta_click` | Clicking any "Join the Club" / "Get Started Today" / nav "Join Us" button (all link to the in-page `#join` section) | `location` (`hero-join` \| `no-experience-join` \| `nav-join` \| `join-section-majors`) | Micro-conversion / intent |
-| `library_cta_click` | Clicking "Browse Use Cases" / "Find your major" (entry points into `/majors/`) | `location` (`hero-browse` \| `library-browse`) | Micro-conversion |
-| `join_community_click` | Clicking "Join the Skool community" — the actual outbound signup | `link_url`, `location: "skool-join"` | **Conversion** — the real signup action |
+| `join_cta_click` | Clicking any `data-cta` element that is not a Skool join, library, or founder link. Today that is only "Start with your major's use cases" in the close section (every join button now links straight to Skool and fires `join_community_click` instead) | `location` (`join-section-majors`) | Micro-conversion / intent |
+| `library_cta_click` | Clicking "Pick your major" / "Find your major" (entry points into the library) | `location` (`hero-browse` \| `library-browse`) | Micro-conversion |
+| `join_community_click` | Clicking any "Join the club" button (every one carries `data-cta="skool-join"` and links straight to Skool) — the actual outbound signup | `link_url`, `location: "skool-join"` | **Conversion** — the real signup action |
 | `founder_card_click` | Clicking a founder card on the homepage, or the "next founder" pager on a founder page | `founder` (slug), `location` (`founder-card` \| `founder-pager`) | Engagement — see [Founder pages](#founder-pages) below |
 | `founder_link_click` | Clicking one of a founder's outbound links (LinkedIn, Licom AI, Sundai, school) | `founder` (slug), `link_label`, `link_url` | Engagement |
 | `song_played` | Pressing play on a founder's "remembered by" Spotify embed | `founder` (slug), `song_title`, `song_artist` | Engagement |

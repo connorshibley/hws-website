@@ -23,13 +23,16 @@ Then, depending on the task:
 ```bash
 python3 scripts/build_site.py      # rebuild everything from source data (idempotent)
 python3 scripts/extract_data.py    # re-import AI_Use_Cases_by_Major_HWS.xlsx (needs openpyxl)
-python -m unittest tests.test_seo_migration  # migration/schema regression checks
+python3 -m unittest discover tests  # migration/schema + redesign regression checks
+python3 scripts/check_redesign.py   # built text and sitemap vs the pre-redesign commit (--ref to change)
 # Deploy through the configured Vercel project after reviewing the generated site/ diff.
 # Deploy the legacy Netlify configuration only when maintaining the old-host redirect.
 ```
 
 No linter or node/npm toolchain. The standard-library regression checks cover the custom
-domain migration and minimal-schema policy. After any change, rebuild and confirm
+domain migration, the minimal-schema policy and the redesign's invariants. The build's Pillow
+path (OG image, icons) draws the brain glyph from `site/assets/favicon.svg` and runs only when
+Pillow is available; use a Python with Pillow installed when brand images change. After any change, rebuild and confirm
 `git diff` on `site/` is either empty (no content change) or exactly what you intended —
 that's the whole verification loop. `extract_data.py` and `build_site.py` both `assert` on
 their expected shapes (42 majors, 20 use cases each, every output file present); a failed
@@ -37,11 +40,16 @@ assertion is the signal, not a false alarm to work around.
 
 ## The one thing to know before editing anything
 
-**`site/majors/**`, `site/index.html`, `site/founders/**`, and `site/js/videos.js` are
-generated.** Editing them directly is invisible work erased by the next build. The real
-inputs are `site/data.json` (via the xlsx), `site/data/videos-config.json` (video/prompt
-config), `scripts/build_site.py`'s constants block (team, founders, meeting info), and
-`site/css/styles.css` / `site/js/site.js` (hand-written, not regenerated). Full pipeline
+**`site/majors/**`, `site/index.html`, `site/founders/**`, `site/js/videos.js`, and
+`site/js/grid-data.js` are generated.** Editing them directly is invisible work erased by the
+next build. The real inputs are `site/data.json` (via the xlsx), `site/data/videos-config.json`
+(video/prompt config), `scripts/build_site.py`'s constants block (team, founders, meeting
+info), and `site/css/styles.css` / `site/js/site.js` / `site/js/home.js` (hand-written, not
+regenerated; `home.js` runs on the home page only). `site/engine/*` is the vendored Scrollcraft
+engine (MIT, copied unedited from the AR0UND project): do not edit it. Design system: dark
+ground, Fraunces and Inter, one accent. Only the home page loads the engine, `grid-data.js`
+and `home.js`; the no-JS guarantee lives in `styles.css` (`html:not(.sc-ready)`) and in
+`home.js` gating (`html.grid-on`). Full pipeline
 diagram and the video/prompt resolution logic (which spans `build_site.py` +
 `videos-config.json` together) are in [CLAUDE.md](CLAUDE.md#architecture) and
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

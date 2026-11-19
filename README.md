@@ -23,7 +23,7 @@ site/data.json  +  site/js/data.js  canonical use-case data
         │  scripts/build_site.py     (also reads site/data/videos-config.json)
         ▼
 site/index.html · site/majors/index.html · site/majors/<slug>/index.html ×42
-site/js/videos.js · sitemap.xml · robots.txt · _headers · og-image.*
+site/js/videos.js · site/js/grid-data.js · sitemap.xml · robots.txt · _headers · og-image.*
 ```
 
 `site/data/videos-config.json` is the single source of truth for video mapping: which
@@ -38,13 +38,20 @@ python3 scripts/build_site.py
 ```
 
 Regenerates the homepage, majors, task hubs, FAQ, AI-coursework guide, founder pages,
-`js/videos.js`, `sitemap.xml`, `robots.txt`, and legacy `_headers`.
+`js/videos.js`, `js/grid-data.js`, `sitemap.xml`, `robots.txt`, and legacy `_headers`.
 Re-running it on an unchanged repo produces no diff.
 
-Run the focused migration/schema regression checks with:
+Run the regression checks (SEO migration/schema and the redesign) with:
 
 ```bash
-python -m unittest tests.test_seo_migration
+python3 -m unittest discover tests
+```
+
+Compare the built site against the pre-redesign commit (visible `<main>` text of every
+page except the home page, plus the sitemap URL set; always prints the home page diff):
+
+```bash
+python3 scripts/check_redesign.py            # default ref 41491b4
 ```
 
 To re-import from the spreadsheet (only needed when the xlsx itself changes):
@@ -70,11 +77,23 @@ Netlify as the primary site.
 | A use-case title, description, or difficulty | `site/data.json` |
 | Which video a use case links to, or its starter prompt | `site/data/videos-config.json` |
 | Team roster, meeting time, site-wide copy | constants at the top of `scripts/build_site.py` |
-| Styling | `site/css/styles.css` |
+| Styling (colour tokens, type, every page) | `site/css/styles.css` |
 | Interactive behaviour (filters, copy button, deep links) | `site/js/site.js` |
+| The home page scroll journey (grid, major picker, anchor landing) | `site/js/home.js` |
 
-**Do not edit `site/majors/**`, `site/index.html`, or `site/js/videos.js` by hand** —
-they are generated, and the next build overwrites them. Change the source, then rebuild.
+**Do not edit `site/majors/**`, `site/index.html`, `site/js/videos.js` or
+`site/js/grid-data.js` by hand** — they are generated, and the next build overwrites them.
+Change the source, then rebuild. Do not edit `site/engine/*` either: it is the vendored
+Scrollcraft scroll engine (MIT, copied unedited from the AR0UND project; licence in
+`site/engine/LICENSE-scrollcraft.txt`).
+
+## Design system
+
+One dark ground (`#0e0a1a`), Fraunces for headlines, Inter for everything else, and a
+single accent (`#ff8a3d`) used only on buttons, links and the lit column. The tokens live
+at the top of `site/css/styles.css`. Only the home page loads the scroll engine; every
+other page is plain HTML and CSS plus `site.js`. All text stays visible with JavaScript
+off or when the engine or the grid fails to load.
 
 ## Layout
 
@@ -82,11 +101,15 @@ they are generated, and the next build overwrites them. Change the source, then 
 scripts/
   build_site.py        static-site generator
   extract_data.py      spreadsheet → data.json / data.js
+  check_redesign.py    compare built text and sitemap against a git ref
 site/
   index.html           homepage            (generated)
   majors/              42 major pages      (generated)
   js/site.js           progressive enhancement (hand-written)
+  js/home.js           home page journey: engine mount, grid, picker (hand-written, home only)
+  js/grid-data.js      title + difficulty per use case for the grid (generated, home only)
   js/videos.js         video resolver      (generated)
+  engine/              vendored Scrollcraft engine (MIT, do not edit; home only)
   css/styles.css       styles              (hand-written)
   data.json            use-case data       (generated from the xlsx)
   data/videos-config.json  video + prompt config (hand-maintained)

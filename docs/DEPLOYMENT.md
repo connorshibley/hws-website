@@ -38,6 +38,7 @@ Running `python3 scripts/build_site.py` regenerates, in order (see `main()`):
   `FOUNDERS`
 - `site/_headers` — legacy Netlify response headers; not consumed by Vercel
 - `site/js/videos.js` — runtime projection of `videos-config.json`
+- `site/js/grid-data.js` — per-major titles and difficulties for the home page grid
 - `site/og-image.png` (+ the `.svg` source), favicons, `site/site.webmanifest`
 
 The function ends with its own assertions (42 major pages exist, both founder pages exist)
@@ -54,6 +55,10 @@ SVG/gradient into PNGs, and try, in order:
    including a cross-platform TrueType font search (macOS/Windows/Linux paths). If no
    TrueType font is found anywhere, it raises rather than silently rendering with an
    illegible bitmap fallback font.
+   The brain glyph is drawn from the path data in `site/assets/favicon.svg`, read at build
+   time. The PNGs regenerate only when Pillow is available, so build with a Python that has
+   Pillow installed (a private venv is fine) whenever brand images change; otherwise the
+   committed PNGs stay as they are.
 2. **Favicons**: external SVG rasterizers first — `cairosvg`, `rsvg-convert`, ImageMagick's
    `magick` or `convert`, whichever is first found on `PATH` — then `_icon_pillow()`, which
    redraws the same rounded gradient tile as `assets/favicon.svg` without needing an SVG
@@ -69,14 +74,20 @@ both paths without needing any system SVG tool.
 Beyond the focused regression suite, verification is: rebuild, then read the diff.
 
 ```bash
-python -m unittest tests.test_seo_migration
+python3 -m unittest discover tests
 python3 scripts/build_site.py
+python3 scripts/check_redesign.py
 git status --short
 git diff --stat
 ```
 
+`scripts/check_redesign.py` compares every page's visible `<main>` text (except the home
+page, whose diff it always prints) and the sitemap URL set against a git ref, by default
+`41491b4`, the pre-redesign commit. Join-button text is normalised. It exits 1 on any
+difference.
+
 The regression suite checks the preferred-domain source, legacy path-preserving redirect,
-and minimal structured-data policy. The build assertions and generated-file review remain
+minimal structured-data policy, and the redesign's invariants. The build assertions and generated-file review remain
 the source of truth for the rest of the static site.
 
 - **Content-only change** (edited `data.json`, `videos-config.json`, or a constant in

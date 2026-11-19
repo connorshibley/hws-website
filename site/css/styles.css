@@ -2,8 +2,10 @@
    HWS AI Club: one dark ground, serif headlines, one accent.
    About 60% ground, 30% ink, 10% accent. The accent goes on buttons and
    links only. Cards sit on the surface colour with a hairline edge and no
-   glow. Inner pages are quiet on purpose; the home page gets its scroll
-   journey later, on top of these same tokens.
+   glow. Inner pages are quiet on purpose; the home page adds its scroll
+   journey (engine, grid, close) on top of these same tokens. The no-JS
+   guarantee lives here: the override for pages where the engine has not
+   marked itself ready keeps every act readable.
 
    The colour and font tokens use the scroll engine's names (--sc-*) so the
    engine's ground drift and this stylesheet agree. Spacing, type scale and
