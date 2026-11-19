@@ -28,21 +28,31 @@ class MainText(HTMLParser):
         self.main_depth = 0
         self.skip_depth = 0
         self.parts = []
+        self.join_depth = 0
 
     def handle_starttag(self, tag, attrs):
+        if tag == "a" and ("data-cta", "skool-join") in attrs and not self.join_depth:
+            # Join buttons are normalised so a relabel is not a difference.
+            self.join_depth = 1
+            if self.main_depth and not self.skip_depth:
+                self.parts.append("Join the club")
+        elif tag == "a" and self.join_depth:
+            self.join_depth += 1
         if tag == "main":
             self.main_depth += 1
         elif tag in ("script", "style") and self.main_depth:
             self.skip_depth += 1
 
     def handle_endtag(self, tag):
+        if tag == "a" and self.join_depth:
+            self.join_depth -= 1
         if tag == "main" and self.main_depth:
             self.main_depth -= 1
         elif tag in ("script", "style") and self.skip_depth:
             self.skip_depth -= 1
 
     def handle_data(self, data):
-        if self.main_depth and not self.skip_depth:
+        if self.main_depth and not self.skip_depth and not self.join_depth:
             self.parts.append(data)
 
 
