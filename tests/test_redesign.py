@@ -61,6 +61,14 @@ class RedesignTests(unittest.TestCase):
             self.assertIn('<details class="bar__menu">', header, path)
             self.assertEqual("bar--solid" in header, path != "index.html", path)
 
+    def test_phone_menu_offers_the_join_button(self):
+        # The bar hides its join button on phones, so the menu sheet carries it.
+        for path, text in self.all_pages():
+            sheet = re.search(r'<div class="bar__sheet">.*?</div>', text, re.S).group(0)
+            joins = re.findall(r'<a[^>]*data-cta="skool-join"[^>]*>', sheet)
+            self.assertEqual(1, len(joins), path)
+            self.assertIn('href="https://www.skool.com/hws-ai-club-7506"', joins[0], path)
+
     def test_each_major_page_lights_its_own_column(self):
         majors = json.loads((ROOT / "site" / "data.json").read_text(encoding="utf-8"))["majors"]
         self.assertEqual(42, len(majors))

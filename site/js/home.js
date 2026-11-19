@@ -136,11 +136,16 @@
     }
     function offscreen(b) { return b.y > viewH || b.y + b.h < 0; }
 
-    /* The slot whose centre is nearest the viewport centre; leaves its rect in box. */
+    /* The slot whose centre is nearest the viewport centre; leaves its rect in box.
+       A slot the stylesheet hides (the arrive slot on short screens) has an
+       all-zero rect and is skipped, so the grid never travels to or from the
+       top-left corner. */
     function nearestSlot() {
       var best = null, bestD = Infinity, mid = viewH / 2;
+      box.w = 0;
       for (var s = 0; s < slots.length; s++) {
         var b = slots[s].getBoundingClientRect();
+        if (!b.width) continue;
         var d = Math.abs(b.top + b.height / 2 - mid);
         if (d < bestD) {
           bestD = d; best = slots[s];
@@ -311,7 +316,7 @@
       /* Off screen (the reading sections between the pick and the close):
          clear once and do nothing more. The dots keep their last state and
          ease into the next one as its box comes into view. */
-      var gridOn = box.w > 0 && !offscreen(box);
+      var gridOn = !!active && box.w > 0 && !offscreen(box);
       if (!gridOn && !flight) {
         if (!drawnEmpty) { ctx.clearRect(0, 0, viewW, viewH); drawnEmpty = true; }
         return;

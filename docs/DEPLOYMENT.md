@@ -48,26 +48,35 @@ degraded gracefully or ran with full fidelity.
 
 ## Raster asset fallback chain
 
-`build_og_image()` and `build_favicons()` (via `_rasterize()`) need to turn the brand
-SVG/gradient into PNGs, and try, in order:
+`build_og_image()` and `build_favicons()` (via `_rasterize()`) turn the brand SVGs
+(`site/og-image.svg`, `site/assets/favicon.svg`) into PNGs. Both use the same chain, in order:
 
-1. **OG image**: `Pillow` only (`_og_png_pillow()`) — hand-draws the 1200×630 card,
-   including a cross-platform TrueType font search (macOS/Windows/Linux paths). If no
-   TrueType font is found anywhere, it raises rather than silently rendering with an
-   illegible bitmap fallback font.
-   The brain glyph is drawn from the path data in `site/assets/favicon.svg`, read at build
-   time. The PNGs regenerate only when Pillow is available, so build with a Python that has
-   Pillow installed (a private venv is fine) whenever brand images change; otherwise the
-   committed PNGs stay as they are.
-2. **Favicons**: external SVG rasterizers first — `cairosvg`, `rsvg-convert`, ImageMagick's
-   `magick` or `convert`, whichever is first found on `PATH` — then `_icon_pillow()`, which
-   redraws the same rounded gradient tile as `assets/favicon.svg` without needing an SVG
-   library at all.
+1. **External SVG rasterizers** — `cairosvg`, `rsvg-convert`, ImageMagick's `magick` or
+   `convert`, whichever is first found on `PATH` and succeeds.
+2. **Pillow** — if none of those worked:
+   - **OG image**: `_og_png_pillow()` hand-draws the 1200×630 card, including a
+     cross-platform TrueType font search (macOS/Windows/Linux paths). If no TrueType font
+     is found anywhere, it raises rather than silently rendering with an illegible bitmap
+     fallback font.
+   - **Favicons**: `_icon_pillow()` draws the rounded tile and the brain glyph in the new
+     palette without needing an SVG library at all.
 
-If nothing is available, the corresponding `build_*` function returns a `"failed (...)"`
-status string instead of raising, and the overall build still completes — check the printed
-summary to see whether that happened. Installing `Pillow` (`pip install Pillow`) covers
-both paths without needing any system SVG tool.
+   Both Pillow paths draw the brain glyph from the path data in `site/assets/favicon.svg`,
+   read at build time (`_svg_path_polylines()` understands only the M, L, H, V, A and Z
+   commands that file uses, and raises `ValueError` on anything else, such as a curve).
+   Only Pillow writes `favicon.ico` (from the 180px icon), whichever tool drew the PNGs.
+
+The PNGs (OG image and favicons alike) regenerate only when one of these tools is
+available; otherwise the committed PNGs stay as they are. So whenever brand images change,
+build with a Python that has Pillow installed (a private venv is fine) or with an SVG
+rasterizer on `PATH`.
+
+If nothing is available, nothing raises and the overall build still completes:
+`build_og_image()` returns `"svg-only (<exception>)"`, `_rasterize()` returns
+`"failed (<exception>)"` for that favicon size and leaves the committed PNG in place, and
+`build_favicons()` reports `"png only, ico failed (<exception>)"` when Pillow is missing.
+Check the printed summary to see whether that happened. Installing `Pillow`
+(`pip install Pillow`) covers both paths without needing any system SVG tool.
 
 ## Verifying a change
 

@@ -107,6 +107,27 @@
     document.head.appendChild(script);
   })();
 
+  /* ---- Phone menu: close it on a link, outside tap or Escape ----
+     The menu is a native <details>, so it opens and closes without this.
+     Same-page links (About, Meet The Founders on the home page) would
+     otherwise leave the sheet open over the section they scrolled to. */
+  (function phoneMenu() {
+    var menu = document.querySelector("details.bar__menu");
+    if (!menu) return;
+    document.addEventListener("click", function (e) {
+      if (!menu.open) return;
+      var inSheetLink = e.target.closest && e.target.closest(".bar__sheet a");
+      if (inSheetLink || !menu.contains(e.target)) menu.open = false;
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape" || !menu.open) return;
+      var hadFocus = menu.contains(document.activeElement);
+      menu.open = false;
+      var summary = menu.querySelector("summary");
+      if (hadFocus && summary) summary.focus();
+    });
+  })();
+
   /* ---- Backward-compat: old hash-router links still work ----
      e.g. /#/major/history  ->  /majors/history/   |   /#/majors -> /majors/ */
   (function hashCompat() {

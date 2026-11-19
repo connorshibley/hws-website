@@ -285,6 +285,18 @@ button { font: inherit; cursor: pointer; }
   color: var(--sc-ink);
   background: color-mix(in oklab, var(--sc-ink) 8%, transparent);
 }
+/* The bar hides its join button on phones; the sheet ends with it instead. */
+.bar__sheet a.btn-primary {
+  justify-content: center;
+  margin-top: var(--s-2);
+  background: var(--sc-accent);
+  color: var(--sc-accent-ink);
+  font-weight: 600;
+}
+.bar__sheet a.btn-primary:hover {
+  background: var(--accent-hover);
+  color: var(--sc-accent-ink);
+}
 
 /* ---------- Layout shell ---------- */
 main.page {
@@ -942,7 +954,9 @@ main.page > ul { max-width: 42rem; }
   width: calc(100% / 42);
   height: 100%;
   background-color: var(--sc-canvas);
-  background-image: radial-gradient(circle at center, var(--sc-accent) 0 14%, transparent 17%);
+  /* About 1.4x the ink dots, so the lit column still reads at phone width;
+     the canvas fill underneath keeps the ink dots from showing through. */
+  background-image: radial-gradient(circle at center, var(--sc-accent) 0 20%, transparent 24%);
   background-size: 100% calc(100% / 20);
 }
 
@@ -1240,7 +1254,7 @@ main.page > ul { max-width: 42rem; }
 }
 
 /* Phone: the bar has room for the wordmark and Menu. The join button would
-   push them off the edge, and it is on every page body and in the footer. */
+   push them off the edge, so it moves to the bottom of the menu sheet. */
 @media (max-width: 860px) {
   .bar__links { display: none; }
   .bar__menu { display: block; }
@@ -1518,8 +1532,15 @@ html.grid-on .act-arrive [data-sc-stage] {
 html.grid-on .act-arrive .hero-sub { max-width: 46rem; margin-bottom: var(--s-5); }
 html.grid-on .act-arrive .hero-actions { margin-bottom: var(--s-4); }
 html.grid-on .act-arrive .hero-meeting { margin-bottom: var(--s-4); }
+/* The slot gets the height left under the words: 35rem is the words' height
+   (bar, title, sub, buttons, meeting line, caption, padding) measured at
+   desktop width, and 2.1 is the grid's 42:20 aspect. The 8rem floor keeps a
+   1280x600 window from pushing the caption off the stage. Below 37rem of
+   height even the floor does not fit (1280 wide needs about 584px); see the
+   short-screen rule after .grid-caption. Re-measure all three numbers if the
+   hero's type or spacing changes. */
 .act-arrive .grid-slot {
-  width: min(100% - 2 * var(--gutter), 80vh, max(12rem, (100svh - 35rem) * 2.1));
+  width: min(100% - 2 * var(--gutter), 80vh, max(8rem, (100svh - 35rem) * 2.1));
   margin-top: auto;
 }
 .grid-caption {
@@ -1530,6 +1551,21 @@ html.grid-on .act-arrive .hero-meeting { margin-bottom: var(--s-4); }
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+/* Short screens (any phone held sideways): the words alone fill the screen,
+   and the pinned stage clips whatever does not fit. Drop the grid and its
+   caption, let the act be as tall as its words so the rest scrolls into
+   view, and keep the words lit instead of fading them out on the way. */
+@media (max-height: 37rem) {
+  html.grid-on .act-arrive .grid-slot,
+  html.grid-on .act-arrive .grid-caption { display: none; }
+  .act-arrive.sc-act--pinned { height: auto !important; }
+  .act-arrive .sc-stage {
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
+  }
+  .act-arrive [data-sc-cue] { opacity: 1 !important; transform: none !important; }
 }
 
 /* ---- 2. The quiet act ---- */

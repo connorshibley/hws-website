@@ -666,6 +666,7 @@ def site_header(home=False):
           <a href="/resources/ai-at-hws/">Resources</a>
           <a href="/faq/">FAQ</a>
           <a href="/#founders">Meet The Founders</a>
+          <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the club</a>
         </div>
       </details>
     </nav>
@@ -2053,10 +2054,12 @@ def _rasterize(src, out, size):
 
 def _svg_path_polylines(d, steps=24):
     """Flatten SVG path data to polylines. Supports only what favicon.svg uses:
-    M/m, L/l, H/h, V/v, A/a (circular or elliptical arcs, no x-axis rotation) and Z."""
+    M/m, L/l, H/h, V/v, A/a (circular or elliptical arcs, no x-axis rotation) and Z.
+    Any other command (curves: C, Q, S, T) raises ValueError rather than drawing a
+    garbled glyph."""
     import math
 
-    toks = re.findall(r"[MmLlHhVvAaZz]|-?(?:\d+\.?\d*|\.\d+)(?:e-?\d+)?", d)
+    toks = re.findall(r"[A-Za-z]|-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?", d)
     out, cur, start, i, cmd = [], None, None, 0, None
     nargs = {"M": 2, "L": 2, "H": 1, "V": 1, "A": 7, "Z": 0}
 
@@ -2072,6 +2075,10 @@ def _svg_path_polylines(d, steps=24):
     while i < len(toks):
         if re.fullmatch(r"[A-Za-z]", toks[i]):
             cmd = toks[i]
+            if cmd not in "MmLlHhVvAaZz":
+                raise ValueError(
+                    f"SVG path command {cmd!r} is not supported by _svg_path_polylines "
+                    "(only M, L, H, V, A and Z); add it there before using it in favicon.svg")
             i += 1
             if cmd in "Zz":
                 if cur is not None and out:
