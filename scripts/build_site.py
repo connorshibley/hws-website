@@ -1207,6 +1207,7 @@ def build_major(m, prev_m, next_m):
     <h1>AI Use Cases for {esc(name)} at HWS</h1>
     <a class="program-link" href="{program}" target="_blank" rel="noopener">Learn more about the {esc(name)} program <span aria-hidden="true">&#8599;</span></a>
   </div>
+  <div class="grid-strip" style="--col:{DATA["majors"].index(m)}" aria-hidden="true"></div>
   <p class="page-lede">{lede}</p>
   <p class="policy-note"><strong>Before you use these on graded work:</strong> check your professor&rsquo;s policy on AI.
   It differs by course, and these examples are study aids &mdash; not permission.</p>

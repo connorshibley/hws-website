@@ -3,6 +3,7 @@
 Run with: python3 -m unittest tests.test_redesign
 """
 from pathlib import Path
+import json
 import re
 import unittest
 
@@ -50,6 +51,13 @@ class RedesignTests(unittest.TestCase):
                 self.assertEqual(2, header.count(f'href="{href}"'), (path, href))
             self.assertIn('<details class="bar__menu">', header, path)
             self.assertEqual("bar--solid" in header, path != "index.html", path)
+
+    def test_each_major_page_lights_its_own_column(self):
+        majors = json.loads((ROOT / "site" / "data.json").read_text(encoding="utf-8"))["majors"]
+        self.assertEqual(42, len(majors))
+        for i, m in enumerate(majors):
+            text = self.page(f"majors/{m['slug']}/index.html")
+            self.assertEqual(1, text.count(f'<div class="grid-strip" style="--col:{i}" aria-hidden="true"></div>'), m["slug"])
 
 
 if __name__ == "__main__":

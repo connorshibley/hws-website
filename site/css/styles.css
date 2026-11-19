@@ -961,6 +961,30 @@ main.page > ul { max-width: 42rem; }
 }
 .program-link:hover { color: var(--accent-hover); }
 
+/* The lit column: the home grid in miniature, 42 x 20, with this major's
+   column (--col, 0-based) in the accent. The ::before backing is canvas so the
+   ink dots beneath do not show through the accent ones. */
+.grid-strip {
+  position: relative;
+  width: min(100%, 26rem);
+  aspect-ratio: 42 / 20;
+  margin: var(--s-2) 0 var(--s-5);
+  background-image: radial-gradient(circle at center,
+    color-mix(in oklab, var(--sc-ink) 45%, transparent) 0 14%, transparent 17%);
+  background-size: calc(100% / 42) calc(100% / 20);
+}
+.grid-strip::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(var(--col) * 100% / 42);
+  width: calc(100% / 42);
+  height: 100%;
+  background-color: var(--sc-canvas);
+  background-image: radial-gradient(circle at center, var(--sc-accent) 0 14%, transparent 17%);
+  background-size: 100% calc(100% / 20);
+}
+
 .difficulty-filter {
   display: flex;
   gap: var(--s-2);
