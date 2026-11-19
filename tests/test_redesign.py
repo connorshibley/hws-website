@@ -12,6 +12,15 @@ ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 
 
+NEW_WORDING = [
+    "42 majors across &middot; 20 use cases down", "Pick your major",
+    "Nobody hands you a manual for AI.", "And it works differently in every major.",
+    "So we wrote down 840 ways to use it.", "Twenty of them are yours.",
+    "Choose your major", "Point at a column, or choose from the list.",
+    "Sundays at five. Bring your major.", "The Use-Case Library",
+]
+
+
 class RedesignTests(unittest.TestCase):
     def page(self, rel):
         return (SITE / rel).read_text(encoding="utf-8")
@@ -69,6 +78,43 @@ class RedesignTests(unittest.TestCase):
             self.assertEqual(m["name"], g["n"])
             self.assertEqual([[u["title"], u["difficulty"]] for u in m["useCases"]], g["u"])
         self.assertLess(len(raw.encode("utf-8")), 70_000)
+
+
+    def test_home_carries_the_new_wording(self):
+        home = self.page("index.html")
+        for line in NEW_WORDING:
+            self.assertIn(line, home, line)
+
+    def test_empty_photo_placeholders_are_gone(self):
+        home = self.page("index.html")
+        for label in ("Workshop Session", "AI Tools Demo", "Team Projects"):
+            self.assertNotIn(label, home)
+
+    def test_only_the_home_page_loads_the_engine_and_never_the_full_dataset(self):
+        for path, text in self.all_pages():
+            is_home = path == "index.html"
+            self.assertEqual(is_home, "/engine/scrollcraft.js" in text, path)
+            self.assertEqual(is_home, "/engine/scrollcraft.css" in text, path)
+            self.assertEqual(is_home, "/js/grid-data.js" in text, path)
+        self.assertNotIn("js/data.js", self.page("index.html"))
+
+    def test_home_keeps_its_anchors_and_tracking_hooks(self):
+        home = self.page("index.html")
+        for anchor in ("about", "library", "team", "join", "community", "founders", "faq"):
+            self.assertEqual(1, home.count(f'id="{anchor}"'), anchor)
+        for cta in ("skool-join", "hero-browse", "library-browse", "join-section-majors"):
+            self.assertIn(f'data-cta="{cta}"', home, cta)
+
+    def test_text_stays_visible_until_the_engine_is_ready(self):
+        css = (ROOT / "site" / "css" / "styles.css").read_text(encoding="utf-8")
+        rule = re.search(r"html:not\(\.sc-ready\)[^{]*\{[^}]*\}", css, re.S).group(0)
+        for needle in ("[data-sc-cue]", "[data-sc-in]", "opacity: 1 !important", "transform: none !important"):
+            self.assertIn(needle, rule)
+
+    def test_engine_is_vendored_with_its_licence(self):
+        engine = ROOT / "site" / "engine"
+        self.assertIn("global.ScrollCraft = { mount: mount", (engine / "scrollcraft.js").read_text(encoding="utf-8"))
+        self.assertIn("MIT License", (engine / "LICENSE-scrollcraft.txt").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

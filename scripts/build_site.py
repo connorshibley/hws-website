@@ -593,6 +593,11 @@ def esc(s):
 # ---------------------------------------------------------------------------
 # Shared chrome
 # ---------------------------------------------------------------------------
+# The scroll engine is vendored under site/engine/ and loads on the home page
+# only. Its stylesheet goes first so styles.css (the brand tokens) wins ties.
+ENGINE_CSS = '<link rel="stylesheet" href="/engine/scrollcraft.css">\n'
+
+
 def head(title, description, canonical_path, jsonld, home=False):
     canonical = BASE_URL + canonical_path
     blocks = "\n".join(
@@ -630,7 +635,7 @@ def head(title, description, canonical_path, jsonld, home=False):
 <meta name="theme-color" content="#0e0a1a">
 <script>document.documentElement.classList.add("js")</script>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/styles.css">
+{ENGINE_CSS if home else ""}<link rel="stylesheet" href="/css/styles.css">
 {blocks}
 </head>"""
 
@@ -702,7 +707,12 @@ def site_footer():
 
 
 def scripts(home=False):
-    return '<script src="/js/site.js" defer></script>'
+    if not home:
+        return '<script src="/js/site.js" defer></script>'
+    return "\n".join(
+        f'<script src="{src}" defer></script>'
+        for src in ("/engine/scrollcraft.js", "/js/grid-data.js", "/js/home.js", "/js/site.js")
+    )
 
 
 # Stable @id anchors. Every JSON-LD node the site emits more than once refers to
@@ -872,64 +882,48 @@ def build_home():
                "publisher": {"@id": ORG_ID}}
 
     body = f"""<body class="view-home">
+<canvas class="grid-canvas" data-grid-canvas aria-hidden="true"></canvas>
 {site_header(home=True)}
 <main id="main">
-  <section class="lp-hero">
-    <div class="hero-blob hero-blob-1" aria-hidden="true"></div>
-    <div class="hero-blob hero-blob-2" aria-hidden="true"></div>
-    <div class="hero-blob hero-blob-3" aria-hidden="true"></div>
-    <div class="hero-tile" aria-hidden="true">{BRAIN_SVG}</div>
-    <div class="section-inner">
-      <h1 class="hero-title">AI for Everyone at Hobart and William Smith</h1>
-      <p class="hero-sub">The student-run AI club at {COLLEGE} (HWS). Learn practical AI skills to excel as a student and future professional &mdash; no coding required.</p>
-      <div class="hero-actions">
-        <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the club <span aria-hidden="true">&#8599;</span></a>
-        <a class="btn-secondary" href="/majors/" data-cta="hero-browse">Browse Use Cases</a>
+  <section class="lp-hero act-arrive" id="arrive" data-sc-act="pin" data-sc-span="1.4" data-sc-drift="#0e0a1a">
+    <div data-sc-stage>
+      <div class="section-inner" data-sc-cue="0 0.85 0">
+        <h1 class="hero-title">AI for Everyone at Hobart and William Smith</h1>
+        <p class="hero-sub">The student-run AI club at {COLLEGE} (HWS). Learn practical AI skills to excel as a student and future professional &mdash; no coding required.</p>
+        <div class="hero-actions">
+          <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the club <span aria-hidden="true">&#8599;</span></a>
+          <a class="btn-secondary" href="#library" data-cta="hero-browse">Pick your major</a>
+        </div>
+        <p class="hero-meeting">{MEETING}</p>
       </div>
-      <p class="hero-meeting">{MEETING}</p>
+      <div class="grid-slot" data-grid-slot="field"></div>
+      <p class="grid-caption">42 majors across &middot; 20 use cases down</p>
     </div>
   </section>
 
-  <section class="lp-section" id="about">
-    <div class="section-inner">
-      <h2 class="section-title">What We Do</h2>
-      <p class="section-sub">We make AI accessible and practical for every student at Hobart and William Smith Colleges</p>
-      <p class="wwd-definition"><strong>HWS AI Club</strong> is a free, student-run AI literacy club at {COLLEGE} in {LOCATION}, open to students in all 42 majors. The club teaches practical, no-code AI skills through weekly workshops and a library of 840 major-specific AI use cases.</p>
-      <div class="wwd-grid">
-        <article class="card"><span class="icon-tile" aria-hidden="true">{ICONS['tools']}</span><h3>AI Tools Mastery</h3><p>Learn ChatGPT, Claude, Gemini, Midjourney, and cutting-edge AI tools that are transforming how we work and create.</p></article>
-        <article class="card"><span class="icon-tile" aria-hidden="true">{ICONS['book']}</span><h3>Smarter Studying</h3><p>AI-powered research, writing, and learning techniques to help you excel in your HWS coursework.</p></article>
-        <article class="card"><span class="icon-tile" aria-hidden="true">{ICONS['rocket']}</span><h3>Career Ready</h3><p>Use AI to boost productivity and stand out professionally in the modern job market.</p></article>
-      </div>
-      <p class="wwd-summary">In short: come with zero AI experience, leave knowing how to use ChatGPT, Claude, and Gemini for your specific major &mdash; every Sunday, free.</p>
-    </div>
-  </section>
-
-  <section class="lp-section">
-    <div class="section-inner split">
-      <div>
-        <h2>No Experience Needed</h2>
-        <p class="split-lede">Whether you&rsquo;re completely new to AI or already experimenting with tools, our club is designed to meet you where you are.</p>
-        <ul class="check-list">
-          <li><span class="check-dot" aria-hidden="true">&#10003;</span>Beginner-friendly workshops every week</li>
-          <li><span class="check-dot" aria-hidden="true">&#10003;</span>Hands-on practice with real AI tools</li>
-          <li><span class="check-dot" aria-hidden="true">&#10003;</span>Connect with fellow HWS students exploring AI</li>
-          <li><span class="check-dot" aria-hidden="true">&#10003;</span>Guest speakers from the tech industry</li>
-          <li><span class="check-dot" aria-hidden="true">&#10003;</span>Build a portfolio of AI-enhanced projects</li>
-        </ul>
-        <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the club <span aria-hidden="true">&#8599;</span></a>
-      </div>
-      <div class="tile-stack">
-        <div class="photo-tile">Workshop Session</div>
-        <div class="photo-tile">AI Tools Demo</div>
-        <div class="photo-tile">Team Projects</div>
+  <section class="act-quiet" id="quiet" data-sc-act="pin" data-sc-span="2.3" data-sc-drift="#0b0815" aria-label="Why the library exists">
+    <div data-sc-stage>
+      <div class="grid-slot" data-grid-slot="dim"></div>
+      <div class="quiet__lines">
+        <p data-sc-cue="0 0.4 0" data-sc-kinetic="lines">Nobody hands you a manual for AI.</p>
+        <p data-sc-cue="0.34 0.72" data-sc-kinetic="lines">And it works differently in every major.</p>
+        <p data-sc-cue="0.66 1 0.3 0" data-sc-kinetic="lines">So we wrote down 840 ways to use it.</p>
       </div>
     </div>
   </section>
 
-  <section class="lp-section lp-library" id="library">
+  <section class="lp-section lp-library act-pick" id="library" data-sc-act="flow" data-sc-drift="#120c22">
     <div class="section-inner">
-      <h2 class="section-title">The Use-Case Library</h2>
+      <p class="pick__label">The Use-Case Library</p>
+      <h2 class="section-title">Twenty of them are yours.</h2>
       <p class="section-sub">Real AI use cases for your exact major at HWS &mdash; rated by difficulty, each naming the exact tutorial it links to and what you&rsquo;ll take away.</p>
+      <div class="pick__control" data-pick-control hidden>
+        <select id="major-pick" aria-label="Choose your major"><option value="">Choose your major</option></select>
+      </div>
+      <div class="grid-slot" data-grid-slot="pick"><span class="grid-tip" data-grid-tip></span></div>
+      <p class="pick__hint" data-pick-hint hidden>Point at a column, or choose from the list.</p>
+      <p class="visually-hidden" aria-live="polite" data-pick-live></p>
+      <div class="pick__result" data-pick-result hidden></div>
       <div class="library-stats">
         <div class="library-stat"><strong>42</strong><span>Majors covered</span></div>
         <div class="library-stat"><strong>840</strong><span>Use cases</span></div>
@@ -943,20 +937,53 @@ def build_home():
     </div>
   </section>
 
+  <section class="lp-section" id="about" data-sc-act="flow" data-sc-drift="#0e0a1a">
+    <div class="section-inner">
+      <h2 class="section-title" data-sc-in>What We Do</h2>
+      <p class="section-sub" data-sc-in>We make AI accessible and practical for every student at Hobart and William Smith Colleges</p>
+      <p class="wwd-definition" data-sc-in><strong>HWS AI Club</strong> is a free, student-run AI literacy club at {COLLEGE} in {LOCATION}, open to students in all 42 majors. The club teaches practical, no-code AI skills through weekly workshops and a library of 840 major-specific AI use cases.</p>
+      <div class="wwd-grid" data-sc-in>
+        <article class="card"><span class="icon-tile" aria-hidden="true">{ICONS['tools']}</span><h3>AI Tools Mastery</h3><p>Learn ChatGPT, Claude, Gemini, Midjourney, and cutting-edge AI tools that are transforming how we work and create.</p></article>
+        <article class="card"><span class="icon-tile" aria-hidden="true">{ICONS['book']}</span><h3>Smarter Studying</h3><p>AI-powered research, writing, and learning techniques to help you excel in your HWS coursework.</p></article>
+        <article class="card"><span class="icon-tile" aria-hidden="true">{ICONS['rocket']}</span><h3>Career Ready</h3><p>Use AI to boost productivity and stand out professionally in the modern job market.</p></article>
+      </div>
+      <p class="wwd-summary" data-sc-in>In short: come with zero AI experience, leave knowing how to use ChatGPT, Claude, and Gemini for your specific major &mdash; every Sunday, free.</p>
+    </div>
+  </section>
+
+  <section class="lp-section">
+    <div class="section-inner split">
+      <div data-sc-in>
+        <h2>No Experience Needed</h2>
+        <p class="split-lede">Whether you&rsquo;re completely new to AI or already experimenting with tools, our club is designed to meet you where you are.</p>
+      </div>
+      <div data-sc-in>
+        <ul class="check-list">
+          <li><span class="check-dot" aria-hidden="true">&#10003;</span>Beginner-friendly workshops every week</li>
+          <li><span class="check-dot" aria-hidden="true">&#10003;</span>Hands-on practice with real AI tools</li>
+          <li><span class="check-dot" aria-hidden="true">&#10003;</span>Connect with fellow HWS students exploring AI</li>
+          <li><span class="check-dot" aria-hidden="true">&#10003;</span>Guest speakers from the tech industry</li>
+          <li><span class="check-dot" aria-hidden="true">&#10003;</span>Build a portfolio of AI-enhanced projects</li>
+        </ul>
+        <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the club <span aria-hidden="true">&#8599;</span></a>
+      </div>
+    </div>
+  </section>
+
   <section class="lp-section lp-tasks">
     <div class="section-inner">
-      <h2 class="section-title">Or start from what you need to do</h2>
-      <p class="section-sub">The same 840 use cases, grouped by task instead of by department &mdash; because most people arrive with a problem, not a major.</p>
-      <p class="siblings">{home_task_links}</p>
-      <div class="library-cta"><a class="btn-secondary" href="/tasks/">Browse all {len(TASK_HUBS)} tasks &rarr;</a></div>
+      <h2 class="section-title" data-sc-in>Or start from what you need to do</h2>
+      <p class="section-sub" data-sc-in>The same 840 use cases, grouped by task instead of by department &mdash; because most people arrive with a problem, not a major.</p>
+      <p class="siblings" data-sc-in>{home_task_links}</p>
+      <div class="library-cta" data-sc-in><a class="btn-secondary" href="/tasks/">Browse all {len(TASK_HUBS)} tasks &rarr;</a></div>
     </div>
   </section>
 
   <section class="lp-section" id="team">
     <div class="section-inner">
-      <h2 class="section-title">Meet the Team</h2>
-      <p class="section-sub">HWS students passionate about making AI accessible to everyone</p>
-      <div class="team-grid">
+      <h2 class="section-title" data-sc-in>Meet the Team</h2>
+      <p class="section-sub" data-sc-in>HWS students passionate about making AI accessible to everyone</p>
+      <div class="team-grid" data-sc-in>
 {team_cards()}
       </div>
     </div>
@@ -964,9 +991,9 @@ def build_home():
 
   <section class="lp-section lp-join" id="join">
     <div class="section-inner">
-      <h2 class="section-title">Ready to Join?</h2>
-      <p class="join-sub">No experience, no application &mdash; just show up. Open to all majors and class years at {COLLEGE}.</p>
-      <p class="join-meeting">{MEETING}</p>
+      <h2 class="section-title" data-sc-in>Ready to Join?</h2>
+      <p class="join-sub" data-sc-in>No experience, no application &mdash; just show up. Open to all majors and class years at {COLLEGE}.</p>
+      <p class="join-meeting" data-sc-in>{MEETING}</p>
       <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the club <span aria-hidden="true">&#8599;</span></a>
       <a class="btn-secondary" href="/majors/" data-cta="join-section-majors">Start with your major&rsquo;s use cases &rarr;</a>
     </div>
@@ -974,18 +1001,18 @@ def build_home():
 
   <section class="lp-section lp-skool" id="community">
     <div class="section-inner">
-      <h2 class="section-title">Join the Community</h2>
-      <p class="section-sub">The club&rsquo;s hub lives on Skool &mdash; the official community for learning material and club activities, all in one place.</p>
-      <figure class="skool-photo">
+      <h2 class="section-title" data-sc-in>Join the Community</h2>
+      <p class="section-sub" data-sc-in>The club&rsquo;s hub lives on Skool &mdash; the official community for learning material and club activities, all in one place.</p>
+      <figure class="skool-photo" data-sc-in>
         <img src="/assets/community/club-session.jpg" width="1280" height="1280" loading="lazy" decoding="async"
              alt="HWS AI Club members at a weekly meeting">
       </figure>
-      <div class="wwd-grid skool-grid">
+      <div class="wwd-grid skool-grid" data-sc-in>
         <article class="card"><span class="icon-tile" aria-hidden="true">{ICONS['book']}</span><h3>Classroom &amp; learning material</h3><p>Video walkthroughs and course material covering AI fundamentals, Claude API, MCP, and building AI agents with Make.com.</p></article>
         <article class="card"><span class="icon-tile" aria-hidden="true">{ICONS['tools']}</span><h3>Workshops &amp; discussion</h3><p>Ask questions, share what you&rsquo;re building, and get help from other students working through the same tools.</p></article>
         <article class="card"><span class="icon-tile" aria-hidden="true">{ICONS['rocket']}</span><h3>Calendar &amp; club activities</h3><p>Meetings, guest speakers, and events &mdash; so you always know what&rsquo;s coming up and never miss a session.</p></article>
       </div>
-      <div class="skool-cta">
+      <div class="skool-cta" data-sc-in>
         <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the club <span aria-hidden="true">&#8599;</span></a>
         <p class="skool-meta">Free to join &middot; {SKOOL_MEMBERS} members &middot; Open to every HWS student</p>
       </div>
@@ -994,12 +1021,12 @@ def build_home():
 
   <section class="lp-section" id="founders">
     <div class="section-inner">
-      <h2 class="section-title">Meet the Founders</h2>
-      <p class="section-sub">The students who started HWS AI Club</p>
-      <div class="team-grid">
+      <h2 class="section-title" data-sc-in>Meet the Founders</h2>
+      <p class="section-sub" data-sc-in>The students who started HWS AI Club</p>
+      <div class="team-grid" data-sc-in>
 {founder_cards()}
       </div>
-      <figure class="founders-photo">
+      <figure class="founders-photo" data-sc-in>
         <img src="/assets/founders/founders-together.jpg" width="633" height="900" loading="lazy" decoding="async"
              alt="Zackary Hanna and Dominic Schimizzi, co-founders of the HWS AI Club">
       </figure>
@@ -1007,11 +1034,18 @@ def build_home():
   </section>
   <section class="lp-section lp-faq" id="faq">
     <div class="section-inner">
-      <h2 class="section-title">Common questions</h2>
-      <p class="section-sub">Everything students ask before their first meeting</p>
-      <div class="faq-list">
+      <h2 class="section-title" data-sc-in>Common questions</h2>
+      <p class="section-sub" data-sc-in>Everything students ask before their first meeting</p>
+      <div class="faq-list" data-sc-in>
 {faq_home_html}
       </div>
+    </div>
+  </section>
+  <section class="act-close" id="close" data-sc-act="pin" data-sc-span="1.5" data-sc-drift="#1c1238">
+    <div data-sc-stage>
+      <div class="grid-slot" data-grid-slot="word"></div>
+      <p class="close__line">Sundays at five. Bring your major.</p>
+      <a class="btn-primary" href="{SKOOL_URL}" target="_blank" rel="noopener" data-cta="skool-join">Join the club <span aria-hidden="true">&#8599;</span></a>
     </div>
   </section>
 </main>

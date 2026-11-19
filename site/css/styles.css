@@ -419,8 +419,8 @@ main.page > ul { max-width: 42rem; }
 .btn-secondary:hover { color: var(--accent-hover); }
 
 /* ---------- Section scaffolding (landing) ---------- */
-/* The home page as ordinary flow sections. The scroll journey replaces this
-   layout later; until then each section is a quiet band on the ground. */
+/* The reading sections of the home page: quiet bands on the ground. The
+   pinned acts around them are laid out under "Home page: the scroll journey". */
 .lp-section {
   padding: var(--s-9) 0;
   border-top: 1px solid var(--hairline);
@@ -447,23 +447,6 @@ main.page > ul { max-width: 42rem; }
   text-align: center;
 }
 .lp-hero .section-inner { position: relative; z-index: 2; }
-.hero-tile {
-  position: absolute;
-  top: calc(var(--bar-h) + var(--s-6));
-  right: 9%;
-  width: 4.5rem;
-  height: 4.5rem;
-  border-radius: var(--r-lg);
-  background: var(--sc-surface);
-  border: 1px solid var(--hairline);
-  color: var(--sc-ink);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform: rotate(6deg);
-  pointer-events: none;
-}
-.hero-tile svg { width: 2.4rem; height: 2.4rem; }
 .hero-title {
   font-size: var(--t-3xl);
   max-width: 15ch;
@@ -571,30 +554,6 @@ main.page > ul { max-width: 42rem; }
   font-size: 0.72rem;
   font-weight: 700;
   margin-top: 0.15rem;
-}
-.tile-stack {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--s-4);
-}
-/* Placeholder tiles: the surface with a faint dot field, a nod to the grid. */
-.photo-tile {
-  border-radius: var(--r-lg);
-  background:
-    radial-gradient(circle, color-mix(in oklab, var(--sc-ink) 16%, transparent) 1px, transparent 1.5px) 0 0 / 14px 14px,
-    var(--sc-surface);
-  border: 1px solid var(--hairline);
-  color: var(--sc-ink);
-  min-height: 9.5rem;
-  display: flex;
-  align-items: flex-end;
-  padding: var(--s-4);
-  font-weight: 600;
-  font-size: var(--t-sm);
-}
-.photo-tile:nth-child(3) {
-  grid-column: 1 / -1;
-  min-height: 8rem;
 }
 
 /* ---------- Use-Case Library band ---------- */
@@ -1285,7 +1244,6 @@ main.page > ul { max-width: 42rem; }
   .bar__menu { display: block; }
   .bar .nav-cta { display: none; }
   .split { grid-template-columns: 1fr; }
-  .hero-tile { display: none; }
 }
 
 @media (max-width: 480px) {
@@ -1460,3 +1418,234 @@ main.page > h3 {
   text-align: center;
 }
 .siblings-all { margin-top: var(--s-3); font-weight: 600; }
+
+/* ==========================================================================
+   Home page: the scroll journey
+   The home page also loads the scroll engine's stylesheet (before this one).
+   Acts: arrive (pinned), quiet (pinned), the pick (flow), the reading
+   sections (flow, reveal on entry), close (pinned). The engine sticks each
+   pinned act's [data-sc-stage] by adding .sc-stage and sets the act's height
+   from data-sc-span; rules that need a real pinned stage are scoped to
+   .sc-stage so that without the engine every act is an ordinary section.
+   ========================================================================== */
+
+/* Until the engine has mounted (or if it never does), nothing it would hide is hidden. */
+html:not(.sc-ready) [data-sc-cue],
+html:not(.sc-ready) [data-sc-in],
+html:not(.sc-ready) [data-sc-stagger] > * { opacity: 1 !important; transform: none !important; }
+
+/* The engine's reset sets body type and an overflow that inner pages do not
+   have. Put the home page back on the same base as every other page, except
+   overflow: `hidden` on body makes body a scroll container and nothing inside
+   it can stick, so the home page clips instead. */
+body.view-home {
+  letter-spacing: normal;
+  text-rendering: auto;
+  font-synthesis-weight: auto;
+  overflow-x: clip;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- The grid: one fixed canvas, a box per act for it to draw into ---- */
+/* Hidden until the grid script has data and a canvas (html.grid-on). */
+.grid-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  display: none;
+}
+.grid-slot {
+  display: none;
+  position: relative;
+  aspect-ratio: 42 / 20;
+  margin-inline: auto;
+}
+.grid-caption { display: none; }
+html.grid-on .grid-canvas,
+html.grid-on .grid-slot { display: block; }
+html.grid-on .grid-caption { display: block; }
+.view-home main { position: relative; z-index: 1; }
+
+/* ---- 1. Arrive ---- */
+.lp-hero.act-arrive {
+  padding: 0;
+  overflow: visible; /* a clipping ancestor would stop the stage sticking */
+  text-align: left;
+}
+.act-arrive [data-sc-stage] {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: calc(var(--bar-h) + var(--s-7)) 0 var(--s-7);
+}
+/* Without scripts there is no grid to make room for: an ordinary hero. */
+html:not(.js) .act-arrive [data-sc-stage] { min-height: 0; }
+.act-arrive .section-inner { width: 100%; }
+.act-arrive .hero-title {
+  font-size: clamp(2.4rem, 1.2rem + 4.4vw, 4.6rem);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  max-width: 19ch;
+  margin: 0 0 var(--s-5);
+  text-wrap: balance;
+}
+.act-arrive .hero-sub { max-width: 40rem; margin: 0 0 var(--s-6); }
+.act-arrive .hero-actions { justify-content: flex-start; }
+/* With the grid on, the words sit higher and tighter and the grid takes the
+   room below. The slot is as wide as the height left under the words allows. */
+html.grid-on .act-arrive [data-sc-stage] {
+  justify-content: flex-start;
+  padding: calc(var(--bar-h) + var(--s-5)) 0 var(--s-5);
+}
+html.grid-on .act-arrive .hero-sub { max-width: 46rem; margin-bottom: var(--s-5); }
+html.grid-on .act-arrive .hero-actions { margin-bottom: var(--s-4); }
+html.grid-on .act-arrive .hero-meeting { margin-bottom: var(--s-4); }
+.act-arrive .grid-slot {
+  width: min(100% - 2 * var(--gutter), 80vh, max(12rem, (100svh - 35rem) * 2.1));
+  margin-top: auto;
+}
+.grid-caption {
+  margin: var(--s-3) 0 0;
+  text-align: center;
+  color: var(--sc-ink-soft);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ---- 2. The quiet act ---- */
+/* The section, not the stage, is the positioning box: a position rule on the
+   stage would beat the engine's .sc-stage { position: sticky }. */
+.act-quiet { position: relative; }
+.act-quiet [data-sc-stage] {
+  display: grid;
+  place-items: center;
+  padding: var(--s-9) var(--gutter);
+}
+.act-quiet.sc-act--pinned [data-sc-stage] { padding: var(--bar-h) var(--gutter) 0; }
+.act-quiet .grid-slot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(92vw, 150vh);
+  transform: translate(-50%, -50%);
+}
+.quiet__lines {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: var(--s-6);
+  width: min(100%, 58rem);
+  text-align: center;
+}
+.quiet__lines > p {
+  margin: 0;
+  font-family: var(--sc-font-display);
+  font-weight: 460;
+  font-size: clamp(2rem, 5vw, 4.2rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+/* Pinned, the three lines take turns in one place. Without the engine they
+   simply stack and read in order. */
+html.sc-ready .quiet__lines { gap: 0; }
+html.sc-ready .quiet__lines > p { grid-area: 1 / 1; align-self: center; }
+
+/* ---- 3. The pick ---- */
+.pick__label {
+  margin: 0 0 var(--s-3);
+  text-align: center;
+  color: var(--sc-ink-soft);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.act-pick .section-title { text-wrap: balance; }
+.act-pick [hidden] { display: none !important; }
+.pick__control {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 var(--s-6);
+}
+.pick__control select {
+  appearance: none;
+  -webkit-appearance: none;
+  min-width: min(100%, 20rem);
+  min-height: 3rem;
+  padding: 0 2.75rem 0 var(--s-4);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(45deg, transparent 50%, var(--sc-ink-soft) 50%) calc(100% - 1.3rem) 55% / 0.35rem 0.35rem no-repeat,
+    linear-gradient(135deg, var(--sc-ink-soft) 50%, transparent 50%) calc(100% - 0.95rem) 55% / 0.35rem 0.35rem no-repeat,
+    var(--sc-surface);
+  color: var(--sc-ink);
+  font: 600 var(--t-base) var(--sc-font-text);
+  cursor: pointer;
+}
+.act-pick .grid-slot {
+  width: min(100%, 76vh);
+  margin-block: var(--s-7) var(--s-5);
+}
+.grid-tip {
+  position: absolute;
+  top: -2.1rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  color: var(--sc-accent);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  pointer-events: none;
+}
+.pick__hint {
+  margin: 0 0 var(--s-7);
+  text-align: center;
+  color: var(--sc-ink-soft);
+}
+.pick__result { max-width: 68rem; margin: 0 auto var(--s-8); }
+
+/* ---- 7. Close ---- */
+.act-close [data-sc-stage] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-5);
+  padding: var(--s-9) var(--gutter);
+  text-align: center;
+}
+.act-close.sc-act--pinned [data-sc-stage] { padding: var(--bar-h) var(--gutter) var(--s-6); }
+.act-close .grid-slot { width: min(100%, 96vh, max(14rem, (100svh - 20rem) * 2.1)); margin: 0 auto var(--s-3); }
+.close__line {
+  margin: 0;
+  font-family: var(--sc-font-display);
+  font-weight: 460;
+  font-size: clamp(1.7rem, 1.2rem + 2vw, 2.6rem);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+@media (max-width: 480px) {
+  .act-arrive [data-sc-stage] { padding: calc(var(--bar-h) + var(--s-5)) 0 var(--s-5); }
+  .quiet__lines > p { font-size: clamp(2rem, 9.6vw, 2.6rem); }
+}
