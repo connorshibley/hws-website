@@ -116,6 +116,16 @@ class RedesignTests(unittest.TestCase):
         self.assertIn("global.ScrollCraft = { mount: mount", (engine / "scrollcraft.js").read_text(encoding="utf-8"))
         self.assertIn("MIT License", (engine / "LICENSE-scrollcraft.txt").read_text(encoding="utf-8"))
 
+    def test_brand_files_use_the_new_palette(self):
+        manifest = json.loads((ROOT / "site" / "site.webmanifest").read_text(encoding="utf-8"))
+        self.assertEqual("#0e0a1a", manifest["theme_color"])
+        self.assertEqual("#0e0a1a", manifest["background_color"])
+        for name in ("og-image.svg", "assets/favicon.svg"):
+            svg = (ROOT / "site" / name).read_text(encoding="utf-8")
+            self.assertNotIn("#7c3aed", svg, name)
+            self.assertNotIn("#3b82f6", svg, name)
+        self.assertIn("#0e0a1a", (ROOT / "site" / "og-image.svg").read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()

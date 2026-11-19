@@ -1916,22 +1916,37 @@ def build_grid_data():
     (SITE / "js" / "grid-data.js").write_text("window.HWS_GRID = " + payload + ";\n", encoding="utf-8")
 
 
+# OG card dot band (shared by the SVG and the Pillow PNG so they stay in step).
+OG_DOT_ROWS, OG_DOT_COLS, OG_DOT_LIT_COL = 5, 42, 14  # column 15, zero-based
+OG_DOT_Y0, OG_DOT_PITCH_Y, OG_DOT_R = 552, 15, 4
+
+
 def build_og_image():
+    # Dot band along the bottom: five rows of 42 ink dots at 45% opacity, column 15 lit.
+    dots = []
+    for row in range(OG_DOT_ROWS):
+        cy = OG_DOT_Y0 + row * OG_DOT_PITCH_Y
+        for col in range(OG_DOT_COLS):
+            cx = round((col + 0.5) * 1200 / OG_DOT_COLS, 1)
+            if col == OG_DOT_LIT_COL:
+                dots.append(f'<circle cx="{cx}" cy="{cy}" r="{OG_DOT_R}" fill="#ff8a3d"/>')
+            else:
+                dots.append(f'<circle cx="{cx}" cy="{cy}" r="{OG_DOT_R}"/>')
+    dots_svg = "\n    ".join(dots)
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#faf5ff"/><stop offset="1" stop-color="#eff6ff"/></linearGradient>
-    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs>
-  <rect width="1200" height="630" fill="url(#bg)"/>
-  <rect x="80" y="86" width="120" height="120" rx="30" fill="url(#tile)"/>
-  <g transform="translate(116 122) scale(2)" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <rect width="1200" height="630" fill="#0e0a1a"/>
+  <rect x="80" y="86" width="120" height="120" rx="30" fill="#1a1330"/>
+  <g transform="translate(116 122) scale(2)" fill="none" stroke="#efeaf7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
     <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
     <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/></g>
-  <text x="230" y="170" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="800" fill="#0f172a">HWS AI Club</text>
-  <text x="80" y="340" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="800" fill="#0f172a">AI for Everyone at</text>
-  <text x="80" y="428" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="800" fill="#7c3aed">Hobart &amp; William Smith</text>
-  <text x="80" y="512" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="500" fill="#64748b">840 AI use cases across all 42 majors · no coding required</text>
+  <text x="230" y="170" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="800" fill="#efeaf7">HWS AI Club</text>
+  <text x="80" y="340" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="800" fill="#efeaf7">AI for Everyone at</text>
+  <text x="80" y="428" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="800" fill="#efeaf7">Hobart &amp; William Smith</text>
+  <text x="80" y="512" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="500" fill="#a79fc0">840 AI use cases across all 42 majors · no coding required</text>
+  <g fill="#efeaf7" fill-opacity="0.45">
+    {dots_svg}
+  </g>
 </svg>"""
     (SITE / "og-image.svg").write_text(svg, encoding="utf-8")
     # Rasterize to PNG (social crawlers prefer PNG/JPG). Prefer an SVG tool; else
@@ -1958,15 +1973,7 @@ def _og_png_pillow(png):
     from PIL import Image, ImageDraw, ImageFont
 
     W, H = 1200, 630
-    img = Image.new("RGB", (W, H), "#f3f0fb")
-    px = img.load()
-    for y in range(H):  # diagonal purple->blue wash
-        for x in range(0, W, 2):
-            t = (x / W + y / H) / 2
-            r = int(0xfa + t * (0xef - 0xfa)); g = int(0xf5 + t * (0xf6 - 0xf5)); b = int(0xff + t * (0xff - 0xff))
-            px[x, y] = (r, g, b)
-            if x + 1 < W:
-                px[x + 1, y] = (r, g, b)
+    img = Image.new("RGB", (W, H), "#0e0a1a")
 
     draw = ImageDraw.Draw(img)
 
@@ -1990,23 +1997,29 @@ def _og_png_pillow(png):
         raise RuntimeError("no TrueType font found for og-image; refusing to render with bitmap fallback")
 
     # brand tile
-    tile = Image.new("RGB", (120, 120), "#5a2fd0")
-    tp = tile.load()
-    for y in range(120):
-        for x in range(120):
-            t = (x + y) / 240
-            tp[x, y] = (int(0x7c + t * (0x3b - 0x7c)), int(0x3a + t * (0x82 - 0x3a)), int(0xed + t * (0xf6 - 0xed)))
-    mask = Image.new("L", (120, 120), 0)
-    ImageDraw.Draw(mask).rounded_rectangle([0, 0, 119, 119], radius=30, fill=255)
-    img.paste(tile, (80, 86), mask)
-    d2 = ImageDraw.Draw(img)
-    d2.text((120, 128), "AI", font=font(56), fill="#ffffff")
+    draw.rounded_rectangle([80, 86, 199, 205], radius=30, fill="#1a1330")
+    draw.text((120, 128), "AI", font=font(56), fill="#efeaf7")
 
-    draw.text((230, 120), "HWS AI Club", font=font(42), fill="#0f172a")
-    draw.text((80, 250), "AI for Everyone at", font=font(76), fill="#0f172a")
-    draw.text((80, 340), "Hobart & William Smith", font=font(76), fill="#7c3aed")
+    draw.text((230, 120), "HWS AI Club", font=font(42), fill="#efeaf7")
+    draw.text((80, 250), "AI for Everyone at", font=font(76), fill="#efeaf7")
+    draw.text((80, 340), "Hobart & William Smith", font=font(76), fill="#efeaf7")
     draw.text((80, 470), "840 AI use cases across all 42 majors  ·  no coding required",
-              font=font(32, bold=False), fill="#64748b")
+              font=font(32, bold=False), fill="#a79fc0")
+
+    # dot band: ink at 45% over the ground, drawn 4x and downsampled for smooth dots
+    k = 4
+    band_top = OG_DOT_Y0 - OG_DOT_R - 2
+    band = Image.new("RGB", (W * k, (H - band_top) * k), "#0e0a1a")
+    bd = ImageDraw.Draw(band)
+    ink = tuple(round(0.45 * c + 0.55 * g) for c, g in zip((0xef, 0xea, 0xf7), (0x0e, 0x0a, 0x1a)))
+    for row in range(OG_DOT_ROWS):
+        cy = (OG_DOT_Y0 + row * OG_DOT_PITCH_Y - band_top) * k
+        for col in range(OG_DOT_COLS):
+            cx = (col + 0.5) * W / OG_DOT_COLS * k
+            r = OG_DOT_R * k
+            bd.ellipse([cx - r, cy - r, cx + r, cy + r],
+                       fill="#ff8a3d" if col == OG_DOT_LIT_COL else ink)
+    img.paste(band.resize((W, H - band_top), Image.LANCZOS), (0, band_top))
     img.save(png, "PNG")
     return "png (pillow)"
 
@@ -2033,21 +2046,39 @@ def _rasterize(src, out, size):
 
 
 def _icon_pillow(out, size):
-    """Fallback: redraw the favicon's rounded gradient tile directly (no SVG
-    rasterizer available). Same brand gradient as assets/favicon.svg."""
+    """Fallback: redraw the favicon's rounded tile and brain mark directly (no SVG
+    rasterizer available). Same colours as assets/favicon.svg."""
     from PIL import Image, ImageDraw
 
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    px = img.load()
-    for y in range(size):
-        for x in range(size):
-            t = (x / size + y / size) / 2
-            px[x, y] = (int(0x7c + t * (0x3b - 0x7c)), int(0x3a + t * (0x82 - 0x3a)), int(0xed + t * (0xf6 - 0xed)), 255)
-    mask = Image.new("L", (size, size), 0)
-    ImageDraw.Draw(mask).rounded_rectangle([0, 0, size - 1, size - 1], radius=max(2, size // 4), fill=255)
-    bg = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    bg.paste(img, (0, 0), mask)
-    bg.save(out, "PNG")
+    k = 8  # supersample, then downsample for smooth edges
+    big = size * k
+    img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([0, 0, big - 1, big - 1], radius=big * 18 // 64, fill="#1a1330")
+    # Brain mark: the SVG's 24-unit glyph sits at 12..52 of the 64-unit tile.
+    u = big / 64 * 40 / 24
+    ox = oy = big / 64 * 12
+    w = max(1, round(2 * u))
+
+    def pt(x, y):
+        return (ox + x * u, oy + y * u)
+
+    # Each hemisphere is the outline of a union of circles (centre x, y, radius in
+    # glyph units), mirrored about x=12: ink discs first, then tile-coloured cores.
+    lobes = [(9, 6, 3), (7.5, 10.5, 4), (7.5, 14.5, 3.5), (9.5, 16, 3.2)]
+    lobes += [(24 - x, y, r) for x, y, r in lobes]
+
+    def discs(grow, fill):
+        for x, y, r in lobes:
+            rr = (r + grow) * u
+            cx, cy = pt(x, y)
+            d.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], fill=fill)
+
+    discs(w / u / 2, "#efeaf7")
+    discs(-w / u / 2, "#1a1330")
+    d.line([pt(12, 5), pt(12, 18)], fill="#efeaf7", width=w)
+    img = img.resize((size, size), Image.LANCZOS)
+    img.save(out, "PNG")
     return "png (pillow fallback)"
 
 
@@ -2078,8 +2109,8 @@ def build_manifest():
         "description": f"AI use cases and workshops for every major at {COLLEGE}.",
         "start_url": "/",
         "display": "standalone",
-        "theme_color": "#7c3aed",
-        "background_color": "#faf5ff",
+        "theme_color": "#0e0a1a",
+        "background_color": "#0e0a1a",
         "icons": [
             {"src": "/assets/favicon-16x16.png", "sizes": "16x16", "type": "image/png"},
             {"src": "/assets/favicon-32x32.png", "sizes": "32x32", "type": "image/png"},
