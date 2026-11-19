@@ -1997,8 +1997,14 @@ def _og_png_pillow(png):
         raise RuntimeError("no TrueType font found for og-image; refusing to render with bitmap fallback")
 
     # brand tile
-    draw.rounded_rectangle([80, 86, 199, 205], radius=30, fill="#1a1330")
-    draw.text((120, 128), "AI", font=font(56), fill="#efeaf7")
+    k = 8
+    tile = Image.new("RGBA", (120 * k, 120 * k), (0, 0, 0, 0))
+    td = ImageDraw.Draw(tile)
+    td.rounded_rectangle([0, 0, 120 * k - 1, 120 * k - 1], radius=30 * k, fill="#1a1330")
+    # Same placement as the SVG card: translate(116 122) scale(2), tile at (80, 86).
+    _draw_brain(td, 36 * k, 36 * k, 2 * k, "#efeaf7")
+    tile = tile.resize((120, 120), Image.LANCZOS)
+    img.paste(tile, (80, 86), tile)
 
     draw.text((230, 120), "HWS AI Club", font=font(42), fill="#efeaf7")
     draw.text((80, 250), "AI for Everyone at", font=font(76), fill="#efeaf7")
@@ -2045,6 +2051,109 @@ def _rasterize(src, out, size):
         return "failed (" + type(e).__name__ + ")"
 
 
+def _svg_path_polylines(d, steps=24):
+    """Flatten SVG path data to polylines. Supports only what favicon.svg uses:
+    M/m, L/l, H/h, V/v, A/a (circular or elliptical arcs, no x-axis rotation) and Z."""
+    import math
+
+    toks = re.findall(r"[MmLlHhVvAaZz]|-?(?:\d+\.?\d*|\.\d+)(?:e-?\d+)?", d)
+    out, cur, start, i, cmd = [], None, None, 0, None
+    nargs = {"M": 2, "L": 2, "H": 1, "V": 1, "A": 7, "Z": 0}
+
+    def num():
+        nonlocal i
+        i += 1
+        return float(toks[i - 1])
+
+    def flag():
+        # arc flags may be glued to the next number ("0 1 0-5.9"); tokens already split them
+        return num() != 0
+
+    while i < len(toks):
+        if re.fullmatch(r"[A-Za-z]", toks[i]):
+            cmd = toks[i]
+            i += 1
+            if cmd in "Zz":
+                if cur is not None and out:
+                    out[-1].append(start)
+                    cur = start
+                continue
+        rel = cmd.islower()
+        c = cmd.upper()
+        if c == "M":
+            x, y = num(), num()
+            if rel and cur:
+                x, y = cur[0] + x, cur[1] + y
+            cur = start = (x, y)
+            out.append([cur])
+            cmd = "l" if rel else "L"
+        elif c in "LHV":
+            x, y = cur
+            if c == "L":
+                nx, ny = num(), num()
+                x, y = (x + nx, y + ny) if rel else (nx, ny)
+            elif c == "H":
+                nx = num(); x = x + nx if rel else nx
+            else:
+                ny = num(); y = y + ny if rel else ny
+            cur = (x, y)
+            out[-1].append(cur)
+        elif c == "A":
+            rx, ry, _rot = abs(num()), abs(num()), num()
+            fa, fs = flag(), flag()
+            ex, ey = num(), num()
+            if rel:
+                ex, ey = cur[0] + ex, cur[1] + ey
+            x0, y0 = cur
+            # endpoint -> centre parameterisation (SVG spec F.6.5), rotation 0
+            dx, dy = (x0 - ex) / 2, (y0 - ey) / 2
+            lam = (dx / rx) ** 2 + (dy / ry) ** 2
+            if lam > 1:
+                rx, ry = rx * math.sqrt(lam), ry * math.sqrt(lam)
+            num_ = rx * rx * ry * ry - rx * rx * dy * dy - ry * ry * dx * dx
+            den = rx * rx * dy * dy + ry * ry * dx * dx
+            co = math.sqrt(max(0.0, num_ / den)) if den else 0.0
+            if fa == fs:
+                co = -co
+            cxp, cyp = co * rx * dy / ry, -co * ry * dx / rx
+            cx, cy = cxp + (x0 + ex) / 2, cyp + (y0 + ey) / 2
+            th1 = math.atan2((dy - cyp) / ry, (dx - cxp) / rx)
+            th2 = math.atan2((-dy - cyp) / ry, (-dx - cxp) / rx)
+            dth = th2 - th1
+            if fs and dth < 0:
+                dth += 2 * math.pi
+            elif not fs and dth > 0:
+                dth -= 2 * math.pi
+            for n in range(1, steps + 1):
+                t = th1 + dth * n / steps
+                out[-1].append((cx + rx * math.cos(t), cy + ry * math.sin(t)))
+            cur = (ex, ey)
+            out[-1][-1] = cur
+    return out
+
+
+def _brain_polylines():
+    """The brain glyph's strokes in its 24-unit space. site/assets/favicon.svg is the
+    source of truth: its <path> data is read here at build time."""
+    svg = (SITE / "assets" / "favicon.svg").read_text(encoding="utf-8")
+    lines = []
+    for d in re.findall(r'<path d="([^"]+)"', svg):
+        lines.extend(_svg_path_polylines(d))
+    return lines
+
+
+def _draw_brain(draw, ox, oy, scale, color, width_units=2):
+    """Stroke the brain glyph (round caps and joins) with its 24-unit origin at
+    (ox, oy), `scale` pixels per unit. Callers supersample for smooth edges."""
+    w = max(1, round(width_units * scale))
+    r = w / 2
+    for line in _brain_polylines():
+        pts = [(ox + x * scale, oy + y * scale) for x, y in line]
+        draw.line(pts, fill=color, width=w, joint="curve")
+        for x, y in (pts[0], pts[-1]):
+            draw.ellipse([x - r, y - r, x + r, y + r], fill=color)
+
+
 def _icon_pillow(out, size):
     """Fallback: redraw the favicon's rounded tile and brain mark directly (no SVG
     rasterizer available). Same colours as assets/favicon.svg."""
@@ -2055,28 +2164,8 @@ def _icon_pillow(out, size):
     img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     d.rounded_rectangle([0, 0, big - 1, big - 1], radius=big * 18 // 64, fill="#1a1330")
-    # Brain mark: the SVG's 24-unit glyph sits at 12..52 of the 64-unit tile.
-    u = big / 64 * 40 / 24
-    ox = oy = big / 64 * 12
-    w = max(1, round(2 * u))
-
-    def pt(x, y):
-        return (ox + x * u, oy + y * u)
-
-    # Each hemisphere is the outline of a union of circles (centre x, y, radius in
-    # glyph units), mirrored about x=12: ink discs first, then tile-coloured cores.
-    lobes = [(9, 6, 3), (7.5, 10.5, 4), (7.5, 14.5, 3.5), (9.5, 16, 3.2)]
-    lobes += [(24 - x, y, r) for x, y, r in lobes]
-
-    def discs(grow, fill):
-        for x, y, r in lobes:
-            rr = (r + grow) * u
-            cx, cy = pt(x, y)
-            d.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], fill=fill)
-
-    discs(w / u / 2, "#efeaf7")
-    discs(-w / u / 2, "#1a1330")
-    d.line([pt(12, 5), pt(12, 18)], fill="#efeaf7", width=w)
+    # Same transform as favicon.svg: translate(12 12) scale(1.6667) in a 64-unit tile.
+    _draw_brain(d, 12 * big / 64, 12 * big / 64, 1.6667 * big / 64, "#efeaf7")
     img = img.resize((size, size), Image.LANCZOS)
     img.save(out, "PNG")
     return "png (pillow fallback)"
