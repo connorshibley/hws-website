@@ -57,11 +57,12 @@ shape: 42 majors × 20 use cases = 840, difficulty/level agreement, no stray row
 `build_site.py` (every expected output file exists after the build). A failed assertion is
 the signal something is wrong; there's nothing else to run in its place.
 
-`build_og_image()` / `build_favicons()` prefer `Pillow`, falling back to `cairosvg` /
-`rsvg-convert` / `imagemagick` on `PATH`. If none are installed the build still completes —
-it just skips those raster outputs and says so in its printed summary. The Pillow path draws
-the brain glyph by reading its path data from `site/assets/favicon.svg` at build time, and the
-PNGs regenerate only when Pillow is available, so run the build with a Python that has Pillow
+`build_og_image()` / `build_favicons()` try an external SVG rasterizer first (`cairosvg` /
+`rsvg-convert` / ImageMagick `magick` or `convert` on `PATH`), then fall back to `Pillow`.
+If none are installed the build still completes — it just skips those raster outputs and says
+so in its printed summary. The Pillow path draws the brain glyph by reading its path data from
+`site/assets/favicon.svg` at build time. The PNGs regenerate only when one of these tools is
+available (and `favicon.ico` only with Pillow), so run the build with a Python that has Pillow
 installed (a private venv is fine) when brand images change. See
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full fallback chain.
 

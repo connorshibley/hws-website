@@ -1565,7 +1565,7 @@ html.grid-on .act-arrive .hero-meeting { margin-bottom: var(--s-4); }
     min-height: 100svh;
     overflow: visible;
   }
-  .act-arrive [data-sc-cue] { opacity: 1 !important; transform: none !important; }
+  .act-arrive [data-sc-cue] { opacity: 1 !important; transform: none !important; pointer-events: auto !important; }
 }
 
 /* ---- 2. The quiet act ---- */
