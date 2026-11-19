@@ -22,6 +22,14 @@
   var engine = window.ScrollCraft ? window.ScrollCraft.mount(document) : null;
   if (engine) wireEngine(engine);
 
+  /* The engine caches every act's offset. Opening or closing the use-case
+     list moves every act after the pick, so the grid asks for a re-measure.
+     A no-op without the engine; it is only called on a visitor's choice,
+     long after mount. */
+  function relayout() {
+    if (engine) engine.layout();
+  }
+
   /* ======================================================================
      The grid
      ====================================================================== */
@@ -205,6 +213,7 @@
       result.appendChild(list);
       result.hidden = false;
       live.textContent = major.n + ", 20 use cases";
+      relayout();
 
       flight = null;
       if (flying) {
@@ -230,6 +239,7 @@
       result.textContent = "";
       hint.hidden = false;
       live.textContent = "";
+      relayout();
     }
 
     select.addEventListener("change", function () {
